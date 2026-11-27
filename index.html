@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DEAD WHEELS – music player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&display=swap">
+<style>
+:root{--ink:#141214;--paper:#e8e0cf;--blood:#b3122b;--hot:#ff5a6e;--bruise:#4b2a63;--pink:#ff3d8b;--grip:#0b0a0b;--dim:#9a917f;
+ color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--grip);color:var(--paper);font:15px/1.5 'Special Elite','Courier New',monospace;
+ background-image:radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.5px);background-size:6px 6px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding:18px 16px 40px;display:grid;gap:22px;grid-template-columns:1.1fr .9fr}
+@media(max-width:820px){.wrap{grid-template-columns:1fr}}
+header{grid-column:1/-1;display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+h1{font:400 clamp(38px,8vw,72px)/.9 'Permanent Marker','Brush Script MT',cursive;margin:0;transform:rotate(-2deg);color:var(--paper);text-shadow:4px 4px 0 var(--blood)}
+header p{margin:0 0 6px;color:var(--dim);max-width:34ch}
+.card{background:var(--ink);border:2px solid var(--paper);padding:18px;position:relative;box-shadow:7px 7px 0 var(--bruise)}
+.card.tilt{transform:rotate(.5deg)}
+.tape{position:absolute;top:-13px;left:24px;width:90px;height:24px;background:rgba(232,224,207,.82);transform:rotate(-5deg)}
+.tape.r{left:auto;right:24px;transform:rotate(4deg)}
+h2{font:400 26px/1 'Permanent Marker',cursive;margin:0 0 12px;color:var(--pink)}
+.deck{display:flex;gap:18px;align-items:center}
+.rec{flex:none;width:140px;height:140px;border-radius:50%;background:repeating-radial-gradient(circle,#050405 0 3px,#1c181d 3px 5px);border:3px solid var(--paper);display:grid;place-items:center;animation:spin 3.2s linear infinite;animation-play-state:paused}
+.playing .rec{animation-play-state:running}
+.rec b{width:54px;height:54px;border-radius:50%;background:var(--blood);display:grid;place-items:center;font:400 34px/1 'Permanent Marker',cursive;color:var(--paper)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.rec{animation:none}}
+.meta{min-width:0}
+#title{font:400 28px/1.05 'Permanent Marker',cursive;overflow-wrap:anywhere}
+#info{color:var(--dim)}
+canvas{width:100%;height:84px;display:block;margin:14px 0 6px;background:#000;border:1px solid var(--bruise)}
+.seek{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--dim)}
+.seek input{flex:1}
+.ctl{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:14px;flex-wrap:wrap}
+.btn{background:var(--paper);color:var(--ink);border:2px solid var(--paper);padding:8px 14px;font-weight:700;box-shadow:3px 3px 0 var(--blood);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--blood)}
+.btn.big{background:var(--blood);color:var(--paper);font:400 24px 'Permanent Marker',cursive;padding:6px 26px;min-width:120px}
+.btn.on{background:var(--pink);border-color:var(--pink)}
+.btn.ghost{background:transparent;color:var(--paper)}
+.btn.ghost.on{color:var(--ink)}
+#msg{margin:12px 0 0;color:var(--hot);text-align:center}
+#msg:empty{display:none}
+input[type=range]{-webkit-appearance:none;appearance:none;height:26px;background:transparent;width:100%;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:6px;background:var(--paper);border-radius:0}
+input[type=range]::-moz-range-track{height:6px;background:var(--paper)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:26px;background:var(--blood);border:2px solid var(--paper);margin-top:-10px;border-radius:0}
+input[type=range]::-moz-range-thumb{width:14px;height:22px;background:var(--blood);border:2px solid var(--paper);border-radius:0}
+.eq{display:grid;gap:12px}
+.row{display:grid;grid-template-columns:78px 1fr 62px;gap:10px;align-items:center}
+.row label{font:400 18px 'Permanent Marker',cursive}
+.row output{text-align:right;color:var(--pink)}
+.vol{margin-top:14px}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.presets .btn{padding:4px 10px;font-size:13px}
+.boost{margin-top:16px;padding-top:14px;border-top:2px dashed var(--dim)}
+.boost .row label{color:var(--hot)}
+.boost small{color:var(--dim);display:block;margin-top:4px}
+.list{grid-column:1/-1}
+.list ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.list li{display:flex;gap:6px}
+.list li button{background:transparent;border:1px solid var(--dim);padding:10px 12px}
+.list li .t{flex:1;min-width:0;text-align:left;display:flex;gap:12px;justify-content:space-between}
+.list li .t span:first-child{overflow-wrap:anywhere}
+.list li .x{flex:none;width:44px;color:var(--dim)}
+.list li button:hover{border-color:var(--paper);background:#1d191f}
+.list li .x:hover{color:var(--hot);border-color:var(--hot)}
+.list li.cur .t{background:var(--bruise);border-color:var(--pink)}
+.list li.empty{display:block;color:var(--dim);padding:6px 2px}
+.list .sub{color:var(--dim);font-size:13px;flex:none}
+
+/* skateboard add button (top-down: deck, two trucks, four wheels) */
+.board{position:relative;display:block;width:min(100%,520px);margin:34px auto 22px;padding:0;border:0;background:none;color:var(--paper);transition:transform .12s}
+.board:hover{transform:rotate(-1.2deg)}
+.board:active{transform:translate(3px,3px)}
+.board:focus-visible{outline-offset:14px}
+@media(prefers-reduced-motion:reduce){.board{transition:none}.board:hover{transform:none}}
+.deck-top{position:relative;z-index:1;display:block;padding:20px 64px;text-align:center;border:3px solid var(--paper);border-radius:999px;
+ background:
+  radial-gradient(circle at 15% 24%,var(--paper) 0 2.5px,transparent 3.5px),
+  radial-gradient(circle at 15% 76%,var(--paper) 0 2.5px,transparent 3.5px),
+  radial-gradient(circle at 85% 24%,var(--paper) 0 2.5px,transparent 3.5px),
+  radial-gradient(circle at 85% 76%,var(--paper) 0 2.5px,transparent 3.5px),
+  linear-gradient(var(--bruise),#35194a);
+ box-shadow:5px 5px 0 var(--blood)}
+.deck-top .big{display:block;font:400 28px/1 'Permanent Marker',cursive}
+.deck-top .small{display:block;margin-top:4px;font-size:13px}
+.truck{position:absolute;top:-16px;bottom:-16px;left:calc(15% - 6px);width:12px;border-radius:3px;background:var(--dim)}
+.truck.r{left:auto;right:calc(15% - 6px)}
+.truck::before,.truck::after{content:"";position:absolute;left:-9px;width:30px;height:18px;border-radius:8px;background:var(--paper);border:2px solid var(--ink)}
+.truck::before{top:0}
+.truck::after{bottom:0}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+<header>
+  <h1>DEAD WHEELS</h1>
+  <p>Loud tapes for bad ideas. Add your own tracks, then crank the knobs.</p>
+</header>
+
+<section class="card tilt" aria-label="Player">
+  <span class="tape"></span>
+  <div class="deck">
+    <div class="rec" aria-hidden="true"><b>✕</b></div>
+    <div class="meta"><div id="title">Pick a track</div><div id="info">nothing queued</div></div>
+  </div>
+  <canvas id="viz" aria-hidden="true"></canvas>
+  <div class="seek"><span id="cur">0:00</span><input id="seek" type="range" min="0" max="1000" value="0" aria-label="Seek"><span id="dur">0:00</span></div>
+  <div class="ctl">
+    <button class="btn" id="prev" aria-label="Previous track">⏮</button>
+    <button class="btn big" id="play">PLAY</button>
+    <button class="btn" id="next" aria-label="Next track">⏭</button>
+    <button class="btn ghost" id="shuf" aria-pressed="false">shuffle</button>
+    <button class="btn ghost" id="rep" aria-pressed="false">repeat: off</button>
+  </div>
+  <p id="msg" role="status"></p>
+  <div class="row vol"><label for="vol">Volume</label><input id="vol" type="range" min="0" max="100" value="80" aria-label="Volume"><output id="volo" for="vol">80%</output></div>
+</section>
+
+<section class="card" aria-label="Sound settings">
+  <span class="tape r"></span>
+  <h2>Mess with the sound</h2>
+  <div class="presets" id="presets"></div>
+  <div class="eq">
+    <div class="row"><label for="bass">Bass</label><input id="bass" type="range" min="-12" max="12" step="1" value="0" aria-label="Bass level"><output id="basso" for="bass"></output></div>
+    <div class="row"><label for="mid">Midrange</label><input id="mid" type="range" min="-12" max="12" step="1" value="0" aria-label="Midrange level"><output id="mido" for="mid"></output></div>
+    <div class="row"><label for="treb">Treble</label><input id="treb" type="range" min="-12" max="12" step="1" value="0" aria-label="Treble level"><output id="trebo" for="treb"></output></div>
+  </div>
+  <div class="boost">
+    <div class="row"><label for="boost">Boost</label><input id="boost" type="range" min="100" max="300" step="5" value="100" aria-label="Audio boost"><output id="boosto" for="boost"></output></div>
+    <small>Past 100% a limiter and soft clipper rein in the peaks, but your ears and neighbors are on their own.</small>
+    <button class="btn ghost" id="reset" style="margin-top:10px">Reset sound</button>
+  </div>
+</section>
+
+<section class="card list" aria-label="Playlist">
+  <h2>Setlist</h2>
+  <ul id="pl"></ul>
+  <button class="board" id="add" type="button">
+    <span class="truck" aria-hidden="true"></span><span class="truck r" aria-hidden="true"></span>
+    <span class="deck-top"><span class="big">+ ADD TRACKS</span><span class="small">click to pick audio files</span></span>
+  </button>
+  <input id="file" type="file" accept="audio/*" multiple hidden>
+</section>
+</div>
+<audio id="au" preload="metadata"></audio>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const au=$('au'),app=$('app');
+let tracks=[],idx=-1,hist=[],shuffle=false,repeat='off',seeking=false,ctx,nodes,freq,raf=0;
+const msg=t=>{$('msg').textContent=t};
+
+/* ---------- audio graph: EQ -> boost -> compressor -> soft clip -> volume -> out ---------- */
+function softClip(){
+  const n=2049,c=new Float32Array(n),k=.85,r=1-k;
+  for(let i=0;i<n;i++){const x=i/(n-1)*2-1,a=Math.abs(x);c[i]=a<=k?x:Math.sign(x)*(k+r*Math.tanh((a-k)/r))}
+  return c;
+}
+function initAudio(){
+  if(ctx)return true;
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC){msg('Audio effects are unavailable here; playing without EQ.');return false}
+  try{
+  ctx=new AC();
+  const src=ctx.createMediaElementSource(au);
+  const low=ctx.createBiquadFilter();low.type='lowshelf';low.frequency.value=140;
+  const mid=ctx.createBiquadFilter();mid.type='peaking';mid.frequency.value=1000;mid.Q.value=.8;
+  const hi=ctx.createBiquadFilter();hi.type='highshelf';hi.frequency.value=5000;
+  const boost=ctx.createGain();
+  const comp=ctx.createDynamicsCompressor();comp.threshold.value=-8;comp.knee.value=6;comp.ratio.value=20;comp.attack.value=.002;comp.release.value=.15;
+  const clip=ctx.createWaveShaper();clip.curve=softClip();clip.oversample='2x';
+  const vol=ctx.createGain();
+  const an=ctx.createAnalyser();an.fftSize=128;freq=new Uint8Array(an.frequencyBinCount);
+  src.connect(low);low.connect(mid);mid.connect(hi);hi.connect(boost);boost.connect(comp);comp.connect(clip);
+  clip.connect(vol);vol.connect(ctx.destination);clip.connect(an);
+  nodes={low,mid,hi,boost,vol,an};
+  applyEq();vol.gain.value=$('vol').value/100;
+  return true;
+  }catch(e){
+    // Keep basic playback available if the browser cannot create the effects graph.
+    nodes=null;
+    if(ctx){try{ctx.close()}catch(_){}}
+    ctx=null;
+    au.volume=+$('vol').value/100;
+    msg('Sound effects could not start; playing without EQ.');
+    return false;
+  }
+}
+
+/* ---------- sound controls ---------- */
+const fmt=n=>(n>0?'+':'')+n+' dB';
+const out=(k,txt)=>{$(k+'o').textContent=txt};
+function applyEq(){
+  const b=+$('bass').value,m=+$('mid').value,t=+$('treb').value,x=+$('boost').value;
+  out('bass',fmt(b));out('mid',fmt(m));out('treb',fmt(t));out('boost',x+'%');
+  if(!nodes)return;
+  nodes.low.gain.value=b;nodes.mid.gain.value=m;nodes.hi.gain.value=t;nodes.boost.gain.value=x/100;
+}
+function applyVol(){
+  const v=+$('vol').value;out('vol',v+'%');
+  if(nodes&&ctx)nodes.vol.gain.setTargetAtTime(v/100,ctx.currentTime,.02);
+  else au.volume=v/100;
+}
+['bass','mid','treb','boost'].forEach(k=>$(k).addEventListener('input',applyEq));
+$('vol').addEventListener('input',applyVol);
+function setSound(p){$('bass').value=p[0];$('mid').value=p[1];$('treb').value=p[2];$('boost').value=p[3];applyEq()}
+const presets={Flat:[0,0,0,100],'Skate punk':[3,-2,6,120],'Emo cry':[2,4,3,115],'Goth cellar':[9,-3,-2,130],'Basement show':[7,2,-4,150]};
+Object.keys(presets).forEach(n=>{
+  const b=document.createElement('button');b.className='btn';b.textContent=n;
+  b.onclick=()=>setSound(presets[n]);$('presets').appendChild(b);
+});
+$('reset').onclick=()=>setSound(presets.Flat);
+
+/* ---------- playlist ---------- */
+function render(){
+  const ul=$('pl');ul.replaceChildren();
+  if(!tracks.length){
+    const li=document.createElement('li');li.className='empty';
+    li.textContent='Nothing in the setlist yet. Hit the board below to add tracks.';
+    ul.appendChild(li);return;
+  }
+  tracks.forEach((t,i)=>{
+    const li=document.createElement('li');if(i===idx)li.className='cur';
+    const b=document.createElement('button');b.className='t';
+    const l=document.createElement('span');l.textContent=t.title;
+    const r=document.createElement('span');r.className='sub';r.textContent=t.info;
+    b.append(l,r);b.onclick=()=>go(i);
+    const x=document.createElement('button');x.className='x';x.textContent='✕';
+    x.setAttribute('aria-label','Remove '+t.title);x.onclick=()=>removeTrack(i);
+    li.append(b,x);ul.appendChild(li);
+  });
+}
+function idle(){
+  $('title').textContent='Pick a track';$('info').textContent='nothing queued';
+  $('cur').textContent=$('dur').textContent='0:00';$('seek').value=0;msg('');
+}
+function load(i){
+  idx=i;const t=tracks[i];msg('');au.src=t.url;
+  $('title').textContent=t.title;$('info').textContent=t.info;
+  $('cur').textContent=$('dur').textContent='0:00';$('seek').value=0;render();
+}
+async function play(){
+  if(!tracks.length){$('file').click();return}
+  if(idx<0)load(0);
+  const effectsReady=initAudio();
+  try{if(effectsReady&&ctx.state==='suspended')await ctx.resume();await au.play()}
+  catch(e){
+    if(e.name==='NotAllowedError')msg('Playback was blocked. Press PLAY again to allow audio.');
+    else if(e.name!=='AbortError')msg('Couldn’t play this track. Try another audio file or format.');
+  }
+}
+function go(i){
+  if(i===idx){au.currentTime=0;play();return}
+  if(idx>=0){hist.push(idx);if(hist.length>50)hist.shift()}
+  load(i);play();
+}
+function next(){
+  const n=tracks.length;if(!n)return;
+  let i;
+  if(shuffle&&n>1){do{i=Math.floor(Math.random()*n)}while(i===idx)}
+  else i=(idx+1)%n;
+  go(i);
+}
+function prev(){
+  if(idx<0)return;
+  if(au.currentTime>3){au.currentTime=0;return}
+  if(hist.length){load(hist.pop());play()}
+  else if(!shuffle&&tracks.length>1){load((idx-1+tracks.length)%tracks.length);play()}
+  else au.currentTime=0;
+}
+function removeTrack(i){
+  URL.revokeObjectURL(tracks[i].url);
+  tracks.splice(i,1);
+  hist=hist.filter(h=>h!==i).map(h=>h>i?h-1:h);
+  if(i===idx){au.pause();au.removeAttribute('src');au.load();idx=-1;idle()}
+  else if(i<idx)idx--;
+  render();
+}
+$('play').onclick=()=>au.paused?play():au.pause();
+$('next').onclick=next;$('prev').onclick=prev;
+$('shuf').onclick=e=>{shuffle=!shuffle;e.currentTarget.classList.toggle('on',shuffle);e.currentTarget.setAttribute('aria-pressed',shuffle)};
+$('rep').onclick=e=>{
+  const modes=['off','all','one'];repeat=modes[(modes.indexOf(repeat)+1)%3];
+  const b=e.currentTarget;b.textContent='repeat: '+repeat;b.classList.toggle('on',repeat!=='off');b.setAttribute('aria-pressed',repeat!=='off');
+};
+
+/* ---------- audio element events ---------- */
+au.addEventListener('play',()=>{app.classList.add('playing');$('play').textContent='PAUSE';if(!raf&&nodes)frame()});
+au.addEventListener('pause',()=>{
+  app.classList.remove('playing');$('play').textContent='PLAY';
+  cancelAnimationFrame(raf);raf=0;g.clearRect(0,0,cv.width,cv.height);
+});
+au.addEventListener('ended',()=>{
+  if(repeat==='one'){au.currentTime=0;play();return}
+  if(!shuffle&&repeat==='off'&&idx===tracks.length-1){au.currentTime=0;return}
+  next();
+});
+au.addEventListener('error',()=>{
+  if(idx<0||!au.getAttribute('src'))return;
+  msg('Can’t play “'+tracks[idx].title+'”. This browser may not support that file format.');
+});
+const tm=s=>isFinite(s)?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'0:00';
+au.addEventListener('timeupdate',()=>{$('cur').textContent=tm(au.currentTime);if(!seeking&&au.duration)$('seek').value=au.currentTime/au.duration*1000});
+au.addEventListener('loadedmetadata',()=>$('dur').textContent=tm(au.duration));
+$('seek').addEventListener('input',e=>{seeking=true;if(au.duration)au.currentTime=e.target.value/1000*au.duration});
+$('seek').addEventListener('change',()=>seeking=false);
+
+/* ---------- add files ---------- */
+function addFiles(files){
+  const ok=files.filter(f=>f.type.startsWith('audio/')||/\.(mp3|wav|ogg|oga|opus|m4a|flac|aac|weba)$/i.test(f.name));
+  if(!ok.length){if(files.length)msg('Those don’t look like audio files.');return}
+  msg('');
+  const first=tracks.length;
+  ok.forEach(f=>{
+    const m=f.name.match(/\.([^.]+)$/);
+    tracks.push({title:f.name.replace(/\.[^.]+$/,''),info:(m?m[1].toUpperCase():'AUDIO')+' · '+(f.size/1048576).toFixed(1)+' MB',url:URL.createObjectURL(f)});
+  });
+  go(first);
+}
+$('add').onclick=()=>$('file').click();
+$('file').addEventListener('change',e=>{const files=[...e.target.files];e.target.value='';addFiles(files)});
+/* a stray drop outside the page would otherwise make the browser open the file and leave the player */
+['dragover','drop'].forEach(v=>addEventListener(v,e=>e.preventDefault()));
+
+/* ---------- visualizer ---------- */
+const cv=$('viz'),g=cv.getContext('2d');
+function sizeCanvas(){const d=window.devicePixelRatio||1;cv.width=Math.round(cv.clientWidth*d);cv.height=Math.round(cv.clientHeight*d)}
+function frame(){
+  raf=requestAnimationFrame(frame);
+  const w=cv.width,h=cv.height;g.clearRect(0,0,w,h);
+  nodes.an.getByteFrequencyData(freq);
+  const n=freq.length,bw=w/n;
+  for(let i=0;i<n;i++){const bh=freq[i]/255*h;g.fillStyle=i%2?'#b3122b':'#ff3d8b';g.fillRect(i*bw+1,h-bh,Math.max(1,bw-3),bh)}
+}
+if('ResizeObserver' in window)new ResizeObserver(sizeCanvas).observe(cv);else addEventListener('resize',sizeCanvas);
+sizeCanvas();
+
+applyEq();applyVol();render();
+})();
+</script>
+</body>
+</html>
