@@ -1,2 +1,2 @@
 # dead-wheels
-its a fucking musiic player like idk??
+its a fucking music player like idk??
