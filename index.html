@@ -236,7 +236,8 @@ function render(){
     b.append(l,r);b.onclick=()=>go(i);
     const x=document.createElement('button');x.className='x';x.textContent='✕';
     x.setAttribute('aria-label','Remove '+t.title);x.onclick=()=>removeTrack(i);
-    li.append(b,x);ul.appendChild(li);
+    const send=document.createElement('button');send.className='x';send.textContent='↗';send.title='Send to Keemail Studio';send.setAttribute('aria-label','Send '+t.title+' to Keemail Studio');send.onclick=()=>sendToStudio(i);
+    li.append(b,send,x);ul.appendChild(li);
   });
 }
 function idle(){
@@ -322,7 +323,7 @@ function addFiles(files){
   const first=tracks.length;
   ok.forEach(f=>{
     const m=f.name.match(/\.([^.]+)$/);
-    tracks.push({title:f.name.replace(/\.[^.]+$/,''),info:(m?m[1].toUpperCase():'AUDIO')+' · '+(f.size/1048576).toFixed(1)+' MB',url:URL.createObjectURL(f)});
+    tracks.push({title:f.name.replace(/\.[^.]+$/,''),info:(m?m[1].toUpperCase():'AUDIO')+' · '+(f.size/1048576).toFixed(1)+' MB',url:URL.createObjectURL(f),file:f});
   });
   go(first);
 }
@@ -343,6 +344,22 @@ function frame(){
 }
 if('ResizeObserver' in window)new ResizeObserver(sizeCanvas).observe(cv);else addEventListener('resize',sizeCanvas);
 sizeCanvas();
+
+/* ---------- Keemail Studio bridge ---------- */
+const studioOrigin=(()=>{try{const value=new URLSearchParams(location.search).get('parentOrigin');if(!value)return'';const u=new URL(value);return u.origin==='https://keemail-user.github.io'?u.origin:''}catch(_){return''}})();
+function sendToStudio(i){
+  const t=tracks[i];if(!studioOrigin||window.parent===window||!t?.file){msg('Open DEAD WHEELS inside Keemail Studio to transfer tracks.');return}
+  window.parent.postMessage({type:'KME_EXPORT_AUDIO',payload:{title:t.title,audio:t.file,mimeType:t.file.type||'audio/mpeg',metadata:{source:'dead-wheels'}}},studioOrigin);
+  msg('Sending '+t.title+' to Keemail Studio…');
+}
+window.addEventListener('message',event=>{
+  if(!studioOrigin||event.origin!==studioOrigin||event.source!==window.parent||event.data?.type!=='KME_LOAD_AUDIO')return;
+  const p=event.data.payload||{};if(!(p.audio instanceof Blob)||!p.audio.size)return;
+  const ext=(p.mimeType||p.audio.type||'audio/wav').split('/')[1]?.replace(/[^a-z0-9]/gi,'')||'wav';
+  const file=new File([p.audio],(p.title||'Studio track')+'.'+ext,{type:p.mimeType||p.audio.type||'audio/wav'});
+  addFiles([file]);msg('Received '+(p.title||'a track')+' from Keemail Studio');
+});
+if(studioOrigin&&window.parent!==window){window.parent.postMessage({type:'KME_READY',app:'dead-wheels',version:'1.0'},studioOrigin)}
 
 applyEq();applyVol();render();
 })();
